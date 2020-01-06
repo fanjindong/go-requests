@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"os"
 	"testing"
+	"time"
 )
 
 func getHandler(c *gin.Context) {
@@ -39,12 +40,18 @@ func postHandler(c *gin.Context) {
 	})
 }
 
+func timeoutHandler(c *gin.Context) {
+	time.Sleep(3 * time.Second)
+	c.JSON(200, gin.H{})
+}
+
 func TestMain(m *testing.M) {
 	r := gin.Default()
 
 	r.GET("/get", getHandler)
 	r.POST("/post", postHandler)
 	r.PUT("/put", postHandler)
+	r.GET("/timeout", timeoutHandler)
 
 	go func() {
 		_ = r.Run() // 监听并在 0.0.0.0:8080 上启动服务

@@ -3,6 +3,7 @@ package requests
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 var BaseUrl = "http://127.0.0.1:8080"
@@ -76,5 +77,27 @@ func TestPut(t *testing.T) {
 		assert.NoError(t, err)
 		got := respData["data"]
 		assert.EqualValues(t, ts.want, got)
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	url := BaseUrl + "/timeout"
+	tests := []struct {
+		input []Option
+		want  int
+	}{
+		{input: []Option{Timeout(4 * time.Second)}, want: 200},
+		{input: []Option{Timeout(3100 * time.Millisecond)}, want: 200},
+		{input: []Option{Timeout(3000 * time.Millisecond)}, want: 503},
+	}
+
+	for _, ts := range tests {
+		resp, err := Get(url, ts.input...)
+		if ts.want != 200 {
+			assert.True(t, err != nil)
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, ts.want, resp.StatusCode)
+		}
 	}
 }
