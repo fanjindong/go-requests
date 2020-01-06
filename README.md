@@ -1,5 +1,3 @@
-# go-requests
-
 # Requests
 
 Requests is an elegant and simple HTTP library for Go.
