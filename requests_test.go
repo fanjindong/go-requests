@@ -43,6 +43,7 @@ func TestPost(t *testing.T) {
 	}{
 		{input: []Option{Json{"a": 1.1}}, want: map[string]interface{}{"a": 1.1}},
 		{input: []Option{Params{"params": "1"}, Json{"b": 2.2}}, want: map[string]interface{}{"params": "1", "b": 2.2}},
+		{input: []Option{Params{"params": "1"}, Json{"b": 2.2}, Headers{"headers": "22"}}, want: map[string]interface{}{"params": "1", "b": 2.2, "headers": "22"}},
 	}
 
 	for _, ts := range tests {

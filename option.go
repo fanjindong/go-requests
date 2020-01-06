@@ -16,10 +16,19 @@ type Option interface {
 	ApplyRequest(req *http.Request) error
 }
 
+type Headers map[string]string
+
+func (h Headers) ApplyClient(_ *http.Client) {}
+func (h Headers) ApplyRequest(req *http.Request) error {
+	for key, value := range h {
+		req.Header.Set(key, value)
+	}
+	return nil
+}
+
 type Params map[string]interface{}
 
-func (p Params) ApplyClient(client *http.Client) {}
-
+func (p Params) ApplyClient(_ *http.Client) {}
 func (p Params) ApplyRequest(req *http.Request) error {
 	var rawQuery []string
 	if req.URL.RawQuery != "" {
@@ -35,7 +44,7 @@ func (p Params) ApplyRequest(req *http.Request) error {
 
 type Json map[string]interface{}
 
-func (j Json) ApplyClient(client *http.Client) {}
+func (j Json) ApplyClient(_ *http.Client) {}
 func (j Json) ApplyRequest(req *http.Request) error {
 	jsonBytes, err := json.Marshal(j)
 	if err != nil {
@@ -49,7 +58,7 @@ func (j Json) ApplyRequest(req *http.Request) error {
 
 type Data map[string]interface{}
 
-func (d Data) ApplyClient(client *http.Client) {}
+func (d Data) ApplyClient(_ *http.Client) {}
 func (d Data) ApplyRequest(req *http.Request) error {
 	data, err := form.EncodeToString(d)
 	if err != nil {

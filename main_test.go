@@ -29,6 +29,10 @@ func postHandler(c *gin.Context) {
 		reqJson["form"] = f.Data
 	}
 
+	if h := c.Request.Header.Get("headers"); h != "" {
+		reqJson["headers"] = h
+	}
+
 	_ = c.ShouldBindJSON(&reqJson)
 	c.JSON(200, gin.H{
 		"data": reqJson,
@@ -42,7 +46,9 @@ func TestMain(m *testing.M) {
 	r.POST("/post", postHandler)
 	r.PUT("/put", postHandler)
 
-	go r.Run() // 监听并在 0.0.0.0:8080 上启动服务
+	go func() {
+		_ = r.Run() // 监听并在 0.0.0.0:8080 上启动服务
+	}()
 
 	code := m.Run()
 	os.Exit(code)
