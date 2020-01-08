@@ -24,7 +24,7 @@ Now, we have a Response object called resp. We can get all the information we ne
 Requests’ simple API means that all forms of HTTP request are as obvious. For example, this is how you make an HTTP POST request:
 
 ```go
-resp, err := requests.Post("http://example.com/ping", requests.Data{"key": "value"})
+resp, err := requests.Post("http://example.com/ping", requests.Json{"key": "value"})
 ```
 
 What about the other HTTP request types: PUT, DELETE, HEAD and OPTIONS? These are all just as simple:
@@ -46,8 +46,7 @@ using the params keyword argument. As an example, if you wanted to pass key1=val
 you would use the following code:
 
 ```go
-payload := requests.Params{"key1": "value1", "key2": "value2"}
-resp, err := requests.Get("http://example.com/get", payload)
+resp, err := requests.Get("http://example.com/get", requests.Params{"key1": "value1", "key2": "value2"})
 ```
 You can see that the URL has been correctly encoded by printing the URL:
 ```go
@@ -87,10 +86,7 @@ If you’d like to add HTTP headers to a request, simply pass in a `requests.Hea
 For example, we did not specify our user-agent in the previous example:
 
 ```go
-url := "https://api.github.com/some/endpoint"
-headers := requests.Headers{"user-agent": "my-app/0.0.1"}
-
-r, err := requests.Get(url, headers)
+r, err := requests.Get("https://api.github.com/some/endpoint", requests.Headers{"user-agent": "my-app/0.0.1"})
 ```
 
 ### More complicated POST requests
@@ -100,9 +96,7 @@ simply pass a `requests.Data` to the data argument.
 Your data will automatically be form-encoded when the request is made:
 
 ```go
-data := requests.Data{"key1": "value1", "key2": "value2"}
-
-r, err := requests.Post("https://httpbin.org/post", data)
+r, err := requests.Post("https://httpbin.org/post", requests.Data{"key1": "value1", "key2": "value2"})
 fmt.Println(r.Text)
 //{"code":0,"message":"pong"}
 ```
@@ -111,10 +105,7 @@ For example, the GitHub API v3 accepts JSON-Encoded POST/PATCH data,
 you can also pass it `requests.Json` using the json parameter and it will be encoded automatically:
 
 ```go
-url := "https://api.github.com/some/endpoint"
-json := requests.Json{"some": "data"}
-
-r, err := requests.post(url, json)
+r, err := requests.post("https://api.github.com/some/endpoint", requests.Json{"some": "data"})
 ```
 
 Using the `requests.Json` in the request will change the Content-Type in the header to application/json.
@@ -122,10 +113,9 @@ Using the `requests.Json` in the request will change the Content-Type in the hea
 ### POST a Multipart-Encoded File
 
 ```go
-url := "https://httpbin.org/post"
 file, err := requests.FileFromPath("demo.text")
-files := requests.Files{"key": "value", "file": file},
-r, err := requests.post(url, files)
+
+r, err := requests.post("https://httpbin.org/post", requests.Files{"key": "value", "file": file})
 ```
 
 ### Response Status Codes
@@ -151,7 +141,7 @@ We can access the headers using any capitalization we want:
 
 ```go
 r.Header.Get("Content-Type")
-"application/json"
+//"application/json"
 ```
 
 ### Timeouts
@@ -162,7 +152,5 @@ Failure to do so can cause your program to hang indefinitely:
 
 
 ```go
-payload := requests.Params{"key1": "value1", "key2": "value2"}
-timeout := requests.Timeout(3*time.Secend)
-requests.get("https://github.com/", payload, timeout)
+r, err := requests.Get("https://github.com/", requests.Params{"key1": "value1", "key2": "value2"}, requests.Timeout(3*time.Secend))
 ```
