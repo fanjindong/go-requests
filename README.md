@@ -105,7 +105,7 @@ For example, the GitHub API v3 accepts JSON-Encoded POST/PATCH data,
 you can also pass it `requests.Json` using the json parameter and it will be encoded automatically:
 
 ```go
-r, err := requests.post("https://api.github.com/some/endpoint", requests.Json{"some": "data"})
+r, err := requests.Post("https://api.github.com/some/endpoint", requests.Json{"key1": "value1", "key2": "value2"})
 ```
 
 Using the `requests.Json` in the request will change the Content-Type in the header to application/json.
@@ -115,7 +115,7 @@ Using the `requests.Json` in the request will change the Content-Type in the hea
 ```go
 file, err := requests.FileFromPath("demo.text")
 
-r, err := requests.post("https://httpbin.org/post", requests.Files{"key": "value", "file": file})
+r, err := requests.Post("https://httpbin.org/post", requests.Files{"key": "value", "file": file})
 ```
 
 ### Response Status Codes
@@ -123,7 +123,7 @@ r, err := requests.post("https://httpbin.org/post", requests.Files{"key": "value
 We can check the response status code:
 
 ```go
-r, err := requests.get("https://httpbin.org/get")
+r, err := requests.Get("https://httpbin.org/get")
 fmt.Println(r.StatusCode)
 // 200
 ```
@@ -137,7 +137,7 @@ fmt.Println(r.Header)
 //map[Cache-Control:[private] Content-Type:[application/json] Set-Cookie:[QINGCLOUDELB=d9a2454c187d2875afb6701eb80e9c8761ebcf3b54797eae61b25b90f71273ea; path=/; HttpOnly]]
 
 ```
-We can access the headers using any capitalization we want:
+We can access the headers using Get method:
 
 ```go
 r.Header.Get("Content-Type")
@@ -152,5 +152,5 @@ Failure to do so can cause your program to hang indefinitely:
 
 
 ```go
-r, err := requests.Get("https://github.com/", requests.Params{"key1": "value1", "key2": "value2"}, requests.Timeout(3*time.Secend))
+r, err := requests.Get("https://github.com/", requests.Params{"key": "value"}, requests.Timeout(3*time.Secend))
 ```
