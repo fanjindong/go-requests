@@ -24,7 +24,7 @@ Now, we have a Response object called resp. We can get all the information we ne
 Requests’ simple API means that all forms of HTTP request are as obvious. For example, this is how you make an HTTP POST request:
 
 ```go
-resp, err := requests.Post("http://example.com/ping", requests.Json{"key": "value"})
+resp, err := requests.Post("http://example.com/ping", requests.Params{"k": "v"}, requests.Json{"key": "value"})
 ```
 
 What about the other HTTP request types: PUT, DELETE, HEAD and OPTIONS? These are all just as simple:
