@@ -130,3 +130,12 @@ func TestFiles(t *testing.T) {
 	assert.NoError(t, err)
 	_ = FileFromContents("demo.text", "123 \n")
 }
+
+func TestResponse(t *testing.T) {
+	url := BaseUrl + "/get"
+	resp, err := Get(url)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "application/json; charset=utf-8", resp.Headers.Get("Content-Type"))
+	assert.Equal(t, "application/json; charset=utf-8", resp.Headers.Get("content-type"))
+}

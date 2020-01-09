@@ -17,6 +17,7 @@ type Response struct {
 	encoding string
 	Text     string
 	Bytes    []byte
+	Headers  *http.Header
 }
 
 func NewResponse(r *http.Response) (*Response, error) {
@@ -25,6 +26,7 @@ func NewResponse(r *http.Response) (*Response, error) {
 		encoding: "utf-8",
 		Text:     "",
 		Bytes:    []byte{},
+		Headers:  &r.Header,
 	}
 
 	err := resp.bytes()

@@ -133,14 +133,14 @@ fmt.Println(r.StatusCode)
 We can view the server’s response headers:
 
 ```go
-fmt.Println(r.Header)
+fmt.Println(r.Headers)
 //map[Cache-Control:[private] Content-Type:[application/json] Set-Cookie:[QINGCLOUDELB=d9a2454c187d2875afb6701eb80e9c8761ebcf3b54797eae61b25b90f71273ea; path=/; HttpOnly]]
 
 ```
 We can access the headers using Get method:
 
 ```go
-r.Header.Get("Content-Type")
+r.Headers.Get("Content-Type")
 //"application/json"
 ```
 
