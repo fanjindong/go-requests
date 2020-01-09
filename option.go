@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ajg/form"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -15,6 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/ajg/form"
+	"github.com/pkg/errors"
 )
 
 type Option interface {
@@ -124,6 +125,10 @@ func FileFromPath(filePath string) (*File, error) {
 
 type Files map[string]interface{}
 
+var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+
+func escapeQuotes(s string) string { return quoteEscaper.Replace(s) }
+
 func (f Files) ApplyClient(_ *http.Client) {}
 func (f Files) ApplyRequest(req *http.Request) error {
 	buffer := &bytes.Buffer{}
@@ -175,8 +180,11 @@ func (f Files) ApplyRequest(req *http.Request) error {
 	return nil
 }
 
-var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+type Cookies http.Cookie
 
-func escapeQuotes(s string) string {
-	return quoteEscaper.Replace(s)
+func (c Cookies) ApplyClient(_ *http.Client) {}
+func (c Cookies) ApplyRequest(req *http.Request) error {
+	cookie := http.Cookie(c)
+	req.AddCookie(&cookie)
+	return nil
 }

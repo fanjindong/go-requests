@@ -1,9 +1,10 @@
 package requests
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var BaseUrl = "http://127.0.0.1:8080"
@@ -100,4 +101,32 @@ func TestTimeout(t *testing.T) {
 			assert.Equal(t, ts.want, resp.StatusCode)
 		}
 	}
+}
+
+func TestCookies(t *testing.T) {
+	url := BaseUrl + "/post"
+	tests := []struct {
+		input []Option
+		want  map[string]interface{}
+	}{
+		{input: []Option{Cookies{Name: "name", Value: "fjd"}}, want: map[string]interface{}{"name": "fjd"}},
+		{input: []Option{Cookies{Name: "name", Value: "fjd"}, Cookies{Name: "age", Value: "18"}}, want: map[string]interface{}{"name": "fjd", "age": "18"}},
+		{input: []Option{Json{"a": 2.1}, Cookies{Name: "name", Value: "fjd"}, Cookies{Name: "age", Value: "18"}}, want: map[string]interface{}{"a": 2.1, "name": "fjd", "age": "18"}},
+	}
+
+	for _, ts := range tests {
+		resp, err := Post(url, ts.input...)
+		assert.NoError(t, err)
+		respData := make(map[string]interface{})
+		err = resp.Json(&respData)
+		assert.NoError(t, err)
+		got := respData["data"]
+		assert.EqualValues(t, ts.want, got)
+	}
+}
+
+func TestFiles(t *testing.T) {
+	_, err := FileFromPath("./go.mod")
+	assert.NoError(t, err)
+	_ = FileFromContents("demo.text", "123 \n")
 }

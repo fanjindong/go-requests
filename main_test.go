@@ -1,11 +1,12 @@
 package requests
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 func getHandler(c *gin.Context) {
@@ -32,6 +33,11 @@ func postHandler(c *gin.Context) {
 
 	if h := c.Request.Header.Get("headers"); h != "" {
 		reqJson["headers"] = h
+	}
+	if cookies := c.Request.Cookies(); len(cookies) > 0 {
+		for _, cookie := range cookies {
+			reqJson[cookie.Name] = cookie.Value
+		}
 	}
 
 	_ = c.ShouldBindJSON(&reqJson)
