@@ -92,7 +92,9 @@ func (r Response) SaveFile(filename string) error {
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer func() {
+		_ = dst.Close()
+	}()
 
 	_, err = dst.Write(r.Bytes)
 	if err != nil {
