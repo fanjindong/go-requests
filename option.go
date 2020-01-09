@@ -180,11 +180,12 @@ func (f Files) ApplyRequest(req *http.Request) error {
 	return nil
 }
 
-type Cookies http.Cookie
+type Cookies map[string]string
 
 func (c Cookies) ApplyClient(_ *http.Client) {}
 func (c Cookies) ApplyRequest(req *http.Request) error {
-	cookie := http.Cookie(c)
-	req.AddCookie(&cookie)
+	for name, value := range c {
+		req.AddCookie(&http.Cookie{Name: name, Value: value})
+	}
 	return nil
 }

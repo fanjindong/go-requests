@@ -109,9 +109,9 @@ func TestCookies(t *testing.T) {
 		input []Option
 		want  map[string]interface{}
 	}{
-		{input: []Option{Cookies{Name: "name", Value: "fjd"}}, want: map[string]interface{}{"name": "fjd"}},
-		{input: []Option{Cookies{Name: "name", Value: "fjd"}, Cookies{Name: "age", Value: "18"}}, want: map[string]interface{}{"name": "fjd", "age": "18"}},
-		{input: []Option{Json{"a": 2.1}, Cookies{Name: "name", Value: "fjd"}, Cookies{Name: "age", Value: "18"}}, want: map[string]interface{}{"a": 2.1, "name": "fjd", "age": "18"}},
+		{input: []Option{Cookies{"name": "fjd"}}, want: map[string]interface{}{"name": "fjd"}},
+		{input: []Option{Cookies{"name": "fjd"}, Cookies{"age": "18"}}, want: map[string]interface{}{"name": "fjd", "age": "18"}},
+		{input: []Option{Json{"a": 2.1}, Cookies{"name": "fjd"}, Cookies{"age": "18"}}, want: map[string]interface{}{"a": 2.1, "name": "fjd", "age": "18"}},
 	}
 
 	for _, ts := range tests {
