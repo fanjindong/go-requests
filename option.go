@@ -76,7 +76,7 @@ func (d Data) ApplyClient(_ *http.Client) {}
 func (d Data) ApplyRequest(req *http.Request) error {
 	data, err := form.EncodeToString(d)
 	if err != nil {
-		return errors.Wrap(ErrInvalidJson, err.Error())
+		return errors.Wrap(ErrInvalidForm, err.Error())
 	}
 	dataReader := strings.NewReader(data)
 	req.Body = ioutil.NopCloser(dataReader)
