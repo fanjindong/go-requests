@@ -15,8 +15,7 @@ import (
 type Response struct {
 	*http.Response
 	encoding string
-	Text     string
-	Bytes    []byte
+	bytes    []byte
 	Headers  *http.Header
 }
 
@@ -24,34 +23,37 @@ func NewResponse(r *http.Response) (*Response, error) {
 	resp := &Response{
 		Response: r,
 		encoding: "utf-8",
-		Text:     "",
-		Bytes:    []byte{},
 		Headers:  &r.Header,
 	}
-
-	err := resp.bytes()
-	if err != nil {
-		return nil, err
-	}
-	resp.text()
 	return resp, nil
 }
 
-func (r *Response) text() {
-	r.Text = string(r.Bytes)
+func (r *Response) Text() (string, error) {
+	if bt, err := r.Bytes(); err != nil {
+		return "", err
+	} else {
+		return string(bt), nil
+	}
 }
 
-func (r *Response) bytes() error {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
+func (r *Response) Bytes() ([]byte, error) {
+	if r.bytes == nil {
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		// for multiple reading
+		// e.g. goquery.NewDocumentFromReader
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+
+		if r.encoding != "utf-8" {
+			data = []byte(mahonia.NewDecoder(r.encoding).ConvertString(string(data)))
+		}
+		r.bytes = data
 	}
 
-	// for multiple reading
-	// e.g. goquery.NewDocumentFromReader
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
-	r.Bytes = data
-	return nil
+	return r.bytes, nil
 }
 
 // Json could parse http json response
@@ -65,20 +67,24 @@ func (r Response) Json(s interface{}) error {
 			return ErrNotJsonResponse
 		}
 	*/
-	err := json.Unmarshal(r.Bytes, s)
-	return err
+	if bt, err := r.Bytes(); err != nil {
+		return err
+	} else {
+		return json.Unmarshal(bt, s)
+	}
 }
 
 // SetEncode changes Response.encoding
 // and it changes Response.Text every times be invoked
 func (r *Response) SetEncode(e string) error {
 	if r.encoding != e {
-		r.encoding = strings.ToLower(e)
-		decoder := mahonia.NewDecoder(e)
-		if decoder == nil {
+		if mahonia.NewDecoder(e) == nil {
 			return ErrUnrecognizedEncoding
 		}
-		r.Text = decoder.ConvertString(r.Text)
+		r.encoding = strings.ToLower(e)
+		if r.bytes != nil {
+			r.bytes = []byte(mahonia.NewDecoder(r.encoding).ConvertString(string(r.bytes)))
+		}
 	}
 	return nil
 }
@@ -98,9 +104,10 @@ func (r Response) SaveFile(filename string) error {
 		_ = dst.Close()
 	}()
 
-	_, err = dst.Write(r.Bytes)
-	if err != nil {
+	if bt, err := r.Bytes(); err != nil {
+		return err
+	} else {
+		_, err = dst.Write(bt)
 		return err
 	}
-	return nil
 }
