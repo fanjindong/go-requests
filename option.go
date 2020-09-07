@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,8 @@ type Option interface {
 	ApplyClient(client *http.Client)
 	ApplyRequest(req *http.Request) error
 }
+
+//TODO 增加开关 来校验 Json, Form, File 只能用一个
 
 type Headers map[string]string
 
@@ -40,19 +43,21 @@ func (t Timeout) ApplyClient(client *http.Client) {
 }
 func (t Timeout) ApplyRequest(_ *http.Request) error { return nil }
 
-type Params map[string]interface{}
+type Params map[string]string
 
 func (p Params) ApplyClient(_ *http.Client) {}
 func (p Params) ApplyRequest(req *http.Request) error {
-	var rawQuery []string
+	if len(p) == 0 {
+		return nil
+	}
 	if req.URL.RawQuery != "" {
-		rawQuery = append(rawQuery, req.URL.RawQuery)
+		req.URL.RawQuery += "&"
 	}
-
+	values := url.Values{}
 	for key, value := range p {
-		rawQuery = append(rawQuery, fmt.Sprintf("%s=%s", key, value))
+		values.Set(key, value)
 	}
-	req.URL.RawQuery = strings.Join(rawQuery, "&")
+	req.URL.RawQuery += values.Encode()
 	return nil
 }
 
@@ -60,13 +65,16 @@ type Json map[string]interface{}
 
 func (j Json) ApplyClient(_ *http.Client) {}
 func (j Json) ApplyRequest(req *http.Request) error {
+	req.Header.Set("Content-Type", "application/json")
+	if len(j) == 0 {
+		return nil
+	}
 	jsonBytes, err := json.Marshal(j)
 	if err != nil {
 		return errors.Wrap(ErrInvalidJson, err.Error())
 	}
 	jsonBuffer := bytes.NewBuffer(jsonBytes)
 	req.Body = ioutil.NopCloser(jsonBuffer)
-	req.Header.Set("Content-Type", "application/json")
 	return nil
 }
 
@@ -74,13 +82,16 @@ type Data map[string]interface{}
 
 func (d Data) ApplyClient(_ *http.Client) {}
 func (d Data) ApplyRequest(req *http.Request) error {
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if len(d) == 0 {
+		return nil
+	}
 	data, err := form.EncodeToString(d)
 	if err != nil {
 		return errors.Wrap(ErrInvalidForm, err.Error())
 	}
 	dataReader := strings.NewReader(data)
 	req.Body = ioutil.NopCloser(dataReader)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return nil
 }
 

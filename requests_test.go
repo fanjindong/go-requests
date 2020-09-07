@@ -7,7 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var BaseUrl = "http://127.0.0.1:8080"
+var (
+	BaseUrl = "http://127.0.0.1:8080"
+	session *Session
+)
 
 func TestGet(t *testing.T) {
 	type input struct {
@@ -19,26 +22,26 @@ func TestGet(t *testing.T) {
 		input input
 		want  string
 	}{
-		{input: input{url: BaseUrl + "/get", params: Params{"a": "1"}}, want: "/get?a=1"},
-		{input: input{url: BaseUrl + "/get", params: Params{"a": "1", "b": "2"}}, want: "/get?a=1&b=2"},
-		{input: input{url: BaseUrl + "/get?", params: Params{"a": "1"}}, want: "/get?a=1"},
-		{input: input{url: BaseUrl + "/get?a=1", params: Params{}}, want: "/get?a=1"},
-		{input: input{url: BaseUrl + "/get?a=1", params: Params{"b": "2"}}, want: "/get?a=1&b=2"},
+		{input: input{url: BaseUrl, params: Params{"a": "1"}}, want: "/?a=1"},
+		{input: input{url: BaseUrl, params: Params{"a": "1", "b": "2"}}, want: "/?a=1&b=2"},
+		{input: input{url: BaseUrl + "/?", params: Params{"a": "1"}}, want: "/?a=1"},
+		{input: input{url: BaseUrl + "/?a=1", params: Params{}}, want: "/?a=1"},
+		{input: input{url: BaseUrl + "/?a=1", params: Params{"b": "2"}}, want: "/?a=1&b=2"},
 	}
 
 	for _, ts := range tests {
-		resp, err := Get(ts.input.url, ts.input.params)
+		r, err := Get(ts.input.url, ts.input.params)
 		assert.NoError(t, err)
-		respData := make(map[string]interface{})
-		err = resp.Json(&respData)
+		resp := &testResp{}
+		err = r.Json(resp)
 		assert.NoError(t, err)
-		got := respData["url"]
+		got := resp.Data["url"]
 		assert.Equal(t, ts.want, got)
 	}
 }
 
 func TestPost(t *testing.T) {
-	url := BaseUrl + "/post"
+	url := BaseUrl
 	tests := []struct {
 		input []Option
 		want  map[string]interface{}
@@ -60,7 +63,7 @@ func TestPost(t *testing.T) {
 }
 
 func TestPut(t *testing.T) {
-	url := BaseUrl + "/put"
+	url := BaseUrl
 	tests := []struct {
 		input []Option
 		want  map[string]interface{}
@@ -104,7 +107,7 @@ func TestTimeout(t *testing.T) {
 }
 
 func TestCookies(t *testing.T) {
-	url := BaseUrl + "/post"
+	url := BaseUrl
 	tests := []struct {
 		input []Option
 		want  map[string]interface{}
@@ -132,7 +135,7 @@ func TestFiles(t *testing.T) {
 }
 
 func TestResponse(t *testing.T) {
-	url := BaseUrl + "/get"
+	url := BaseUrl
 	resp, err := Get(url)
 	assert.NoError(t, err)
 

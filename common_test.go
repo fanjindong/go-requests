@@ -1,18 +1,26 @@
 package requests
 
 import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"os"
 	"testing"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 )
 
+type testResp struct {
+	Code    int                    `json:"code"`
+	Message string                 `json:"message"`
+	Data    map[string]interface{} `json:"data"`
+}
+
+func (r testResp) String() string {
+	return fmt.Sprintf("{Code: %d, Message: %s, Data: %+v }", r.Code, r.Message, r.Data)
+}
+
 func getHandler(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"url": c.Request.URL.String(),
-	})
+	c.JSON(200, gin.H{"code": 0, "message": "success", "data": map[string]interface{}{"url": c.Request.URL.String()}})
 }
 
 func postHandler(c *gin.Context) {
@@ -41,27 +49,26 @@ func postHandler(c *gin.Context) {
 	}
 
 	_ = c.ShouldBindJSON(&reqJson)
-	c.JSON(200, gin.H{
-		"data": reqJson,
-	})
+	c.JSON(200, gin.H{"code": 0, "message": "success", "data": reqJson})
 }
 
 func timeoutHandler(c *gin.Context) {
 	time.Sleep(3 * time.Second)
-	c.JSON(200, gin.H{})
+	c.JSON(200, gin.H{"code": 0, "message": "success"})
 }
 
 func TestMain(m *testing.M) {
 	r := gin.Default()
 
-	r.GET("/get", getHandler)
-	r.POST("/post", postHandler)
-	r.PUT("/put", postHandler)
+	r.GET("/", getHandler)
+	r.POST("/", postHandler)
+	r.PUT("/", postHandler)
 	r.GET("/timeout", timeoutHandler)
 
-	go func() {
-		_ = r.Run() // 监听并在 0.0.0.0:8080 上启动服务
-	}()
+	// 监听并在 0.0.0.0:8080 上启动服务
+	go func() { _ = r.Run() }()
+
+	session = NewSession()
 
 	code := m.Run()
 	os.Exit(code)
