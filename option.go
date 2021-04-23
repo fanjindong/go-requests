@@ -121,12 +121,12 @@ func (f *File) MIME(mimeType string) *File {
 }
 
 // File returns a new file struct
-func FileFromContents(filename string, content string) *File {
+func FileContents(filename string, content string) *File {
 	return &File{FileContent: ioutil.NopCloser(strings.NewReader(content)), FileName: filename}
 }
 
-// FileFromPath returns a file struct from file path
-func FileFromPath(filePath string) (*File, error) {
+// FilePath returns a file struct from file path
+func FilePath(filePath string) (*File, error) {
 	fd, err := os.Open(filePath)
 	if err != nil {
 		return nil, errors.Wrap(ErrInvalidFile, err.Error())
