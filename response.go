@@ -1,7 +1,6 @@
 package requests
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -25,7 +24,9 @@ func NewResponse(r *http.Response) (*Response, error) {
 		encoding: "utf-8",
 		Headers:  &r.Header,
 	}
-	return resp, nil
+	_, err := resp.Bytes()
+	_ = r.Body.Close()
+	return resp, err
 }
 
 func (r *Response) Text() (string, error) {
@@ -45,7 +46,7 @@ func (r *Response) Bytes() ([]byte, error) {
 
 		// for multiple reading
 		// e.g. goquery.NewDocumentFromReader
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
+		//r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
 
 		if r.encoding != "utf-8" {
 			data = []byte(mahonia.NewDecoder(r.encoding).ConvertString(string(data)))

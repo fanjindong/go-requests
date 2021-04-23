@@ -160,3 +160,24 @@ func TestResponse_SetEncode(t *testing.T) {
 	t.Log(resp.GetEncode())
 	t.Log(resp.Text())
 }
+
+func BenchmarkRequestCloseBody(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		resp, err := Get(BaseUrl)
+		if err != nil {
+			panic(err)
+		}
+		resp.Text()
+		resp.Body.Close()
+	}
+}
+
+func BenchmarkRequestNotCloseBody(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		resp, err := Get(BaseUrl)
+		resp.Text()
+		if err != nil {
+			panic(err)
+		}
+	}
+}
