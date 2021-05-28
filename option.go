@@ -78,10 +78,44 @@ func (j Json) ApplyRequest(req *http.Request) error {
 	return nil
 }
 
+type JsonArray []map[string]interface{}
+
+func (j JsonArray) ApplyClient(_ *http.Client) {}
+func (j JsonArray) ApplyRequest(req *http.Request) error {
+	req.Header.Set("Content-Type", "application/json")
+	if len(j) == 0 {
+		return nil
+	}
+	jsonBytes, err := json.Marshal(j)
+	if err != nil {
+		return errors.Wrap(ErrInvalidJson, err.Error())
+	}
+	jsonBuffer := bytes.NewBuffer(jsonBytes)
+	req.Body = ioutil.NopCloser(jsonBuffer)
+	return nil
+}
+
 type Data map[string]interface{}
 
 func (d Data) ApplyClient(_ *http.Client) {}
 func (d Data) ApplyRequest(req *http.Request) error {
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if len(d) == 0 {
+		return nil
+	}
+	data, err := form.EncodeToString(d)
+	if err != nil {
+		return errors.Wrap(ErrInvalidForm, err.Error())
+	}
+	dataReader := strings.NewReader(data)
+	req.Body = ioutil.NopCloser(dataReader)
+	return nil
+}
+
+type DataArray []map[string]interface{}
+
+func (d DataArray) ApplyClient(_ *http.Client) {}
+func (d DataArray) ApplyRequest(req *http.Request) error {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if len(d) == 0 {
 		return nil
