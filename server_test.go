@@ -2,12 +2,15 @@ package requests
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 )
+
+var port = 8080
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
@@ -16,7 +19,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func getHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	params := map[string]string{}
-	//fmt.Printf("params: %+v", query)
 	for k, v := range query {
 		params[k] = v[0]
 	}
@@ -26,7 +28,6 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("Content-Type")
-	data := map[string]interface{}{}
 	switch contentType {
 	case "application/json":
 		req, err := ioutil.ReadAll(r.Body)
@@ -35,27 +36,36 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("invalid body: " + err.Error()))
 			return
 		}
-		if err = json.Unmarshal(req, &data); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("parse body err: " + err.Error()))
-			return
-		}
+		w.Write(req)
+		return
 	case "application/x-www-form-urlencoded":
 		if err := r.ParseForm(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("parse body: " + err.Error()))
 			return
 		}
+		data := map[string]interface{}{}
 		for k, v := range r.PostForm {
 			data[k] = v[0]
 		}
+		body, _ := json.Marshal(data)
+		w.Write(body)
+		return
 	}
-	body, _ := json.Marshal(data)
-	w.Write(body)
 }
 
 func timeoutHandler(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
+	w.Write([]byte("OK"))
+}
+
+func headerHandler(w http.ResponseWriter, r *http.Request) {
+	bytes, _ := json.Marshal(r.Header)
+	w.Write(bytes)
+}
+
+func cooclerHandler(w http.ResponseWriter, r *http.Request) {
+	r.Cookies()
 	w.Write([]byte("OK"))
 }
 
@@ -64,14 +74,12 @@ func TestMain(m *testing.M) {
 	http.HandleFunc("/get", getHandler)
 	http.HandleFunc("/post", postHandler)
 	http.HandleFunc("/timeout", timeoutHandler)
+	http.HandleFunc("/header", headerHandler)
 	go func() {
-		if err := http.ListenAndServe(":8080", nil); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 			panic(err)
 		}
 	}()
-	session = NewSession()
-	//time.Sleep(1 * time.Second)
-
 	code := m.Run()
 	os.Exit(code)
 }
