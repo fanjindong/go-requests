@@ -1,5 +1,5 @@
 # Requests
-![](.images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg)
+![](./images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg)
 
 Requests is an elegant and simple HTTP library for Go.
 
@@ -17,23 +17,23 @@ Making a request with Requests is very simple.
 For this example:
 
 ```go
-resp, err := requests.Get("http://example.com/ping", requests.Params{"key": "value"})
+resp, err := requests.Get("https://example.com/ping", requests.Params{"key": "value"})
 ```
 Now, we have a Response object called resp. We can get all the information we need from this object.
 
 Requests’ simple API means that all forms of HTTP request are as obvious. For example, this is how you make an HTTP POST request:
 
 ```go
-resp, err := requests.Post("http://example.com/ping", requests.Params{"k": "v"}, requests.Json{"key": "value"})
+resp, err := requests.Post("https://example.com/ping", requests.Params{"k": "v"}, requests.Json{"key": "value"})
 ```
 
 What about the other HTTP request types: PUT, DELETE, HEAD and OPTIONS? These are all just as simple:
 
 ```go
-resp, err := requests.Put("http://example.com/ping", requests.Data{"key": "value"})
-resp, err := requests.Delete("http://example.com/ping")
-resp, err := requests.Head("http://example.com/ping")
-resp, err := requests.Options("http://example.com/ping")
+resp, err := requests.Put("https://example.com/ping", requests.Data{"key": "value"})
+resp, err := requests.Delete("https://example.com/ping")
+resp, err := requests.Head("https://example.com/ping")
+resp, err := requests.Options("https://example.com/ping")
 ```
 That’s all well and good, but it’s also only the start of what Requests can do.
 
@@ -46,12 +46,12 @@ using the params keyword argument. As an example, if you wanted to pass key1=val
 you would use the following code:
 
 ```go
-resp, err := requests.Get("http://example.com/get", requests.Params{"key1": "value1", "key2": "value2"})
+resp, err := requests.Get("https://example.com/get", requests.Params{"key1": "value1", "key2": "value2"})
 ```
 You can see that the URL has been correctly encoded by printing the URL:
 ```go
 fmt.Println(resp.Request.URL)
-//http://example.com/get?key2=value2&key1=value1
+//https://example.com/get?key2=value2&key1=value1
 ```
 
 ### Response Content
