@@ -5,36 +5,30 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
-
-	"github.com/axgle/mahonia"
 )
+
+var unmarshal = json.Unmarshal
+
+//SetUnmarshal Set custom Unmarshal functions, default is json.Unmarshal
+func SetUnmarshal(f func(data []byte, v interface{}) error) {
+	unmarshal = f
+}
 
 // Response is the wrapper for http.Response
 type Response struct {
 	*http.Response
-	encoding string
-	bytes    []byte
-	Headers  *http.Header
+	bytes []byte
 }
 
 func NewResponse(r *http.Response) (*Response, error) {
-	resp := &Response{
-		Response: r,
-		encoding: "utf-8",
-		Headers:  &r.Header,
-	}
+	resp := &Response{Response: r}
 	_, err := resp.Bytes()
 	_ = r.Body.Close()
 	return resp, err
 }
 
-func (r *Response) Text() (string, error) {
-	if bt, err := r.Bytes(); err != nil {
-		return "", err
-	} else {
-		return string(bt), nil
-	}
+func (r *Response) Text() string {
+	return string(r.bytes)
 }
 
 func (r *Response) Bytes() ([]byte, error) {
@@ -43,56 +37,14 @@ func (r *Response) Bytes() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		// for multiple reading
-		// e.g. goquery.NewDocumentFromReader
-		//r.Body = ioutil.NopCloser(bytes.NewBuffer(data))
-
-		if r.encoding != "utf-8" {
-			data = []byte(mahonia.NewDecoder(r.encoding).ConvertString(string(data)))
-		}
 		r.bytes = data
 	}
-
 	return r.bytes, nil
 }
 
 // Json could parse http json response
 func (r Response) Json(s interface{}) error {
-	// Json response not must be `application/json` type
-	// maybe `text/plain`...etc.
-	// requests will parse it regardless of the content-type
-	/*
-		cType := r.Header.Get("Content-Type")
-		if !strings.Contains(cType, "json") {
-			return ErrNotJsonResponse
-		}
-	*/
-	if bt, err := r.Bytes(); err != nil {
-		return err
-	} else {
-		return json.Unmarshal(bt, s)
-	}
-}
-
-// SetEncode changes Response.encoding
-// and it changes Response.Text every times be invoked
-func (r *Response) SetEncode(e string) error {
-	if r.encoding != e {
-		if mahonia.NewDecoder(e) == nil {
-			return ErrUnrecognizedEncoding
-		}
-		r.encoding = strings.ToLower(e)
-		if r.bytes != nil {
-			r.bytes = []byte(mahonia.NewDecoder(r.encoding).ConvertString(string(r.bytes)))
-		}
-	}
-	return nil
-}
-
-// GetEncode returns Response.encoding
-func (r Response) GetEncode() string {
-	return r.encoding
+	return unmarshal(r.bytes, s)
 }
 
 // SaveFile save bytes data to a local file
