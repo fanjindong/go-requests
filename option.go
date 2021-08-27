@@ -154,7 +154,7 @@ func (f *File) MIME(mimeType string) *File {
 	return f
 }
 
-// File returns a new file struct
+// FileContents returns a new file struct
 func FileContents(filename string, content string) *File {
 	return &File{FileContent: ioutil.NopCloser(strings.NewReader(content)), FileName: filename}
 }

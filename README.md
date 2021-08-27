@@ -1,5 +1,5 @@
 # Requests
-![](./doc/images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg)
+![](.images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg)
 
 Requests is an elegant and simple HTTP library for Go.
 
