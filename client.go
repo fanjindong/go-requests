@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -82,6 +83,9 @@ func (s *Client) Request(method, url string, opts ...ReqOption) (*Response, erro
 			return nil, err
 		}
 	}
+	if err = req.loadBody(); err != nil {
+		return nil, err
+	}
 
 	resp, err := s.Do(req.Request)
 	if err != nil {
@@ -117,4 +121,17 @@ func (s *Client) Patch(url string, opts ...ReqOption) (*Response, error) {
 
 func (s *Client) Head(url string, opts ...ReqOption) (*Response, error) {
 	return s.Request(HEAD, url, opts...)
+}
+
+var unmarshal = json.Unmarshal
+var marshal = json.Marshal
+
+//SetUnmarshal Set custom Unmarshal functions, default is json.Unmarshal
+func SetUnmarshal(f func(data []byte, v interface{}) error) {
+	unmarshal = f
+}
+
+//SetMarshal Set custom Marshal functions, default is json.Marshal
+func SetMarshal(f func(v interface{}) ([]byte, error)) {
+	marshal = f
 }

@@ -2,13 +2,14 @@ package requests
 
 import (
 	"bytes"
-	"encoding/json"
-	"github.com/ajg/form"
+	"fmt"
 	"github.com/pkg/errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -63,152 +64,82 @@ func (p Params) Do(req *Request) error {
 type Json map[string]interface{}
 
 func (j Json) Do(req *Request) error {
-	req.Header.Set("Content-Type", "application/json")
-	if len(j) == 0 {
-		return nil
+	if req.files != nil || req.form != nil {
+		return ErrInvalidBodyType
 	}
-	jsonBytes, err := json.Marshal(j)
-	if err != nil {
-		return errors.Wrap(ErrInvalidJson, err.Error())
+	if req.json == nil {
+		req.json = make(Json)
 	}
-	jsonBuffer := bytes.NewBuffer(jsonBytes)
-	req.Body = ioutil.NopCloser(jsonBuffer)
+	for k, v := range j {
+		req.json[k] = v
+	}
 	return nil
 }
 
 type Jsons []Json
 
 func (j Jsons) Do(req *Request) error {
-	req.Header.Set("Content-Type", "application/json")
-	if len(j) == 0 {
-		return nil
+	if req.files != nil || req.form != nil {
+		return ErrInvalidBodyType
 	}
-	jsonBytes, err := json.Marshal(j)
-	if err != nil {
-		return errors.Wrap(ErrInvalidJson, err.Error())
-	}
-	jsonBuffer := bytes.NewBuffer(jsonBytes)
-	req.Body = ioutil.NopCloser(jsonBuffer)
+	req.jsons = append(req.jsons, j...)
 	return nil
 }
 
 type Form map[string]string
 
 func (f Form) Do(req *Request) error {
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if len(f) == 0 {
-		return nil
+	if req.json != nil || req.jsons != nil {
+		return ErrInvalidBodyType
 	}
-	data, err := form.EncodeToString(f)
-	if err != nil {
-		return errors.Wrap(ErrInvalidForm, err.Error())
+	if req.form == nil {
+		req.form = make(Form)
 	}
-	dataReader := strings.NewReader(data)
-	req.Body = ioutil.NopCloser(dataReader)
+	for k, v := range f {
+		req.form[k] = v
+	}
 	return nil
 }
 
-//
-//// File is a struct that is used to specify the file that a User wishes to upload.
-//type File struct {
-//	// Filename is the name of the file that you wish to upload. We use this to guess the mimetype as well as pass it onto the server
-//	FileName string
-//	// FileContent is happy as long as you pass it a io.ReadCloser (which most file use anyways)
-//	FileContent io.ReadCloser
-//	// MimeType represents which mimetime should be sent along with the file.
-//	// When empty, defaults to application/octet-stream
-//	MimeType string
-//}
-//
-//// FName changes file's filename in multipart form
-//// invoke it in a chain
-//func (f *File) FName(filename string) *File {
-//	f.FileName = filename
-//	return f
-//}
-//
-//// MIME changes file's mime type in multipart form
-//// invoke it in a chain
-//func (f *File) MIME(mimeType string) *File {
-//	f.MimeType = mimeType
-//	return f
-//}
-//
-//// FileContents returns a new file struct
-//func FileContents(filename string, content string) *File {
-//	return &File{FileContent: ioutil.NopCloser(strings.NewReader(content)), FileName: filename}
-//}
-//
-//// FilePath returns a file struct from file path
-//func FilePath(filePath string) (*File, error) {
-//	fd, err := os.Open(filePath)
-//	if err != nil {
-//		return nil, errors.Wrap(ErrInvalidFile, err.Error())
-//	}
-//	return &File{FileContent: fd, FileName: filepath.Base(filePath)}, nil
-//}
-//
-//type Files map[string]interface{}
-//
-//var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
-//
-//func escapeQuotes(s string) string { return quoteEscaper.Replace(s) }
-//
-//func (f Files) Do(req *Request) error {
-//	buffer := &bytes.Buffer{}
-//	multipartWriter := multipart.NewWriter(buffer)
-//
-//	for key, value := range f {
-//		switch value := value.(type) {
-//		case *File:
-//			if value.FileContent == nil || value.FileName == "" {
-//				return ErrInvalidFile
-//			}
-//			var writer io.Writer
-//			var err error
-//
-//			if value.MimeType == "" {
-//				writer, err = multipartWriter.CreateFormFile(key, value.FileName)
-//			} else {
-//				h := make(textproto.MIMEHeader)
-//				h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"; filename="%s"`, escapeQuotes(key), escapeQuotes(value.FileName)))
-//				h.Set("Content-Type", value.MimeType)
-//				writer, err = multipartWriter.CreatePart(h)
-//			}
-//			if err != nil {
-//				return errors.Wrap(ErrInvalidFile, err.Error())
-//			}
-//
-//			if _, err = io.Copy(writer, value.FileContent); err != nil && err != io.EOF {
-//				return errors.Wrap(ErrInvalidFile, err.Error())
-//			}
-//
-//			if err := value.FileContent.Close(); err != nil {
-//				return errors.Wrap(ErrInvalidFile, err.Error())
-//			}
-//		case string:
-//			err := multipartWriter.WriteField(key, value)
-//			if err != nil {
-//				return errors.Wrap(ErrInvalidFile, err.Error())
-//			}
-//		default:
-//			return errors.Wrap(ErrInvalidFile, fmt.Sprintf("invalid value: %+v", value))
-//		}
-//	}
-//
-//	if err := multipartWriter.Close(); err != nil {
-//		return err
-//	}
-//	req.Body = ioutil.NopCloser(buffer)
-//	req.Header.Add("Content-Type", multipartWriter.FormDataContentType())
-//	return nil
-//}
-//
 type Cookies map[string]string
 
 func (c Cookies) Do(req *Request) error {
 	for name, value := range c {
 		req.AddCookie(&http.Cookie{Name: name, Value: value})
 	}
+	return nil
+}
+
+type file struct {
+	field    string // file field
+	content  io.ReadCloser
+	name     string // file name
+	filePath string
+}
+
+func FileWithPath(field string, path string) *file {
+	return &file{filePath: path, field: field, name: filepath.Base(path)}
+}
+
+func FileWithContent(field, fileName string, content []byte) *file {
+	return &file{field: field, name: fileName, content: ioutil.NopCloser(bytes.NewReader(content))}
+}
+
+func (f file) Do(req *Request) error {
+	if f.field == "" {
+		return errors.Wrap(ErrInvalidFile, "field is nil")
+	} else if f.name == "" {
+		return errors.Wrap(ErrInvalidFile, "fileName is nil")
+	}
+	if f.content == nil && f.filePath == "" {
+		return errors.Wrap(ErrInvalidFile, "content is nil, path is nil")
+	} else if f.content == nil {
+		fc, err := os.Open(f.filePath)
+		if err != nil {
+			return errors.Wrap(ErrInvalidFile, fmt.Sprintf("open file err: %v", err))
+		}
+		f.content = fc
+	}
+	req.files = append(req.files, &f)
 	return nil
 }
