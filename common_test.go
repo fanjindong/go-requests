@@ -1,7 +1,6 @@
 package requests
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -22,7 +21,7 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 	for k, v := range query {
 		params[k] = v[0]
 	}
-	body, _ := json.Marshal(params)
+	body, _ := marshal(params)
 	w.Write(body)
 }
 
@@ -39,7 +38,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		for k, v := range r.PostForm {
 			data[k] = v[0]
 		}
-		body, _ := json.Marshal(data)
+		body, _ := marshal(data)
 		w.Write(body)
 		return
 	default:
@@ -60,7 +59,7 @@ func timeoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func headerHandler(w http.ResponseWriter, r *http.Request) {
-	bytes, _ := json.Marshal(r.Header)
+	bytes, _ := marshal(r.Header)
 	w.Write(bytes)
 }
 
