@@ -126,12 +126,12 @@ func (s *Client) Head(url string, opts ...ReqOption) (*Response, error) {
 var unmarshal = json.Unmarshal
 var marshal = json.Marshal
 
-//SetUnmarshal Set custom Unmarshal functions, default is json.Unmarshal
-func SetUnmarshal(f func(data []byte, v interface{}) error) {
-	unmarshal = f
-}
-
-//SetMarshal Set custom Marshal functions, default is json.Marshal
-func SetMarshal(f func(v interface{}) ([]byte, error)) {
-	marshal = f
-}
+////SetUnmarshal Set custom Unmarshal functions, default is json.Unmarshal
+//func SetUnmarshal(f func(data []byte, v interface{}) error) {
+//	unmarshal = f
+//}
+//
+////SetMarshal Set custom Marshal functions, default is json.Marshal
+//func SetMarshal(f func(v interface{}) ([]byte, error)) {
+//	marshal = f
+//}
