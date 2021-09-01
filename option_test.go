@@ -1,6 +1,8 @@
 package requests
 
 import (
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -99,7 +101,7 @@ func TestJson(t *testing.T) {
 		{args: args{}, want: map[string]interface{}{}},
 		{args: args{opts: []ReqOption{Json{"a": "1"}}}, want: map[string]interface{}{"a": "1"}},
 		{args: args{opts: []ReqOption{Json{"a": "1", "b": 2}}}, want: map[string]interface{}{"a": "1", "b": float64(2)}},
-		{args: args{opts: []ReqOption{Json{"a": "1"}, Json{"b": "2"}}}, want: map[string]interface{}{"b": "2"}},
+		{args: args{opts: []ReqOption{Json{"a": "1"}, Json{"b": "2"}}}, want: map[string]interface{}{"a": "1", "b": "2"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -127,7 +129,7 @@ func TestJsons(t *testing.T) {
 		{args: args{opts: []ReqOption{Jsons{{"a": "1"}}}}, want: []map[string]interface{}{{"a": "1"}}},
 		{args: args{opts: []ReqOption{Jsons{{"a": "1"}, {"b": 2}}}}, want: []map[string]interface{}{{"a": "1"}, {"b": float64(2)}}},
 		{args: args{opts: []ReqOption{Jsons{{"a": "1", "b": 2}}}}, want: []map[string]interface{}{{"a": "1", "b": float64(2)}}},
-		{args: args{opts: []ReqOption{Jsons{{"a": "1"}}, Jsons{{"b": "2"}}}}, want: []map[string]interface{}{{"b": "2"}}},
+		{args: args{opts: []ReqOption{Jsons{{"a": "1"}}, Jsons{{"b": "2"}}}}, want: []map[string]interface{}{{"a": "1"}, {"b": "2"}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -154,7 +156,7 @@ func TestForm(t *testing.T) {
 		{args: args{}, want: map[string]interface{}{}},
 		{args: args{opts: []ReqOption{Form{"a": "1"}}}, want: map[string]interface{}{"a": "1"}},
 		{args: args{opts: []ReqOption{Form{"a": "1", "b": "2"}}}, want: map[string]interface{}{"a": "1", "b": "2"}},
-		{args: args{opts: []ReqOption{Form{"a": "1"}, Form{"b": "2"}}}, want: map[string]interface{}{"b": "2"}},
+		{args: args{opts: []ReqOption{Form{"a": "1"}, Form{"b": "2"}}}, want: map[string]interface{}{"a": "1", "b": "2"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -162,7 +164,41 @@ func TestForm(t *testing.T) {
 			got := make(map[string]interface{})
 			_ = resp.Json(&got)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Form() got = %v, want %v", got["b"].(int), tt.want)
+				t.Errorf("Form() got = %v, want %v", got["b"], tt.want)
+			}
+		})
+	}
+}
+
+func TestFile(t *testing.T) {
+	url := testUrl + "/upload"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{args: args{opts: []ReqOption{FileWithContent("file", "hi.text", []byte("hi!"))}}, want: "hi!"},
+		{args: args{opts: []ReqOption{Form{"fileField": "fc"}, FileWithContent("fc", "hi.text", []byte("hi!"))}}, want: "hi!"},
+		{args: args{opts: []ReqOption{Form{"fileField": "image"}, FileWithPath("image", "./images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg")}},
+			want: func() string {
+				f, _ := os.Open("./images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg")
+				bytes, _ := ioutil.ReadAll(f)
+				return string(bytes)
+			}()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := Post(url, tt.args.opts...)
+			if err != nil {
+				t.Errorf("file() err = %v", err)
+				return
+			}
+			got := resp.Text()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("file() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

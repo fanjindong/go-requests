@@ -1,18 +1,10 @@
 package requests
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
 )
-
-var unmarshal = json.Unmarshal
-
-//SetUnmarshal Set custom Unmarshal functions, default is json.Unmarshal
-func SetUnmarshal(f func(data []byte, v interface{}) error) {
-	unmarshal = f
-}
 
 // Response is the wrapper for http.Response
 type Response struct {
