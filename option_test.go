@@ -1,78 +1,204 @@
 package requests
 
 import (
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 )
 
-func TestTimeout(t *testing.T) {
-	url := baseUrl + "/timeout"
+func TestWithTimeout(t *testing.T) {
+	url := testUrl + "/timeout"
+	type args struct {
+		timeout time.Duration
+	}
 	tests := []struct {
-		input     []Option
+		name      string
+		args      args
 		wantError bool
 	}{
-		{input: []Option{Timeout(4 * time.Second)}, wantError: false},
-		{input: []Option{Timeout(3100 * time.Millisecond)}, wantError: false},
-		{input: []Option{Timeout(3000 * time.Millisecond)}, wantError: true},
-	}
-
-	for _, tt := range tests {
-		_, err := Get(url, tt.input...)
-		if !reflect.DeepEqual(err != nil, tt.wantError) {
-			t.Errorf("Get() err = %v, wantError %v", err, tt.wantError)
-		}
-	}
-}
-
-//func TestCookies(t *testing.T) {
-//	url := baseUrl
-//	tests := []struct {
-//		input []Option
-//		want  map[string]interface{}
-//	}{
-//		{input: []Option{Cookies{"name": "fjd"}}, want: map[string]interface{}{"name": "fjd"}},
-//		{input: []Option{Cookies{"name": "fjd"}, Cookies{"age": "18"}}, want: map[string]interface{}{"name": "fjd", "age": "18"}},
-//		{input: []Option{Json{"a": 2.1}, Cookies{"name": "fjd"}, Cookies{"age": "18"}}, want: map[string]interface{}{"a": 2.1, "name": "fjd", "age": "18"}},
-//	}
-//
-//	for _, tt := range tests {
-//		resp, err := Post(url, tt.input...)
-//		assert.NoError(t, err)
-//		respData := make(map[string]interface{})
-//		err = resp.Json(&respData)
-//		assert.NoError(t, err)
-//		got := respData["data"]
-//		assert.EqualValues(t, tt.want, got)
-//	}
-//}
-
-func TestOptions(t *testing.T) {
-	type args struct {
-		method  string
-		url     string
-		options []Option
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		want    map[string]interface{}
-	}{
-		{name: "1", args: args{method: "GET", url: baseUrl + "/get", options: []Option{Params{"a": "1"}}}, wantErr: false, want: map[string]interface{}{"a": "1"}},
+		{args: args{}},
+		{args: args{timeout: 2 * time.Second}},
+		{args: args{timeout: 1100 * time.Millisecond}},
+		{args: args{timeout: 1000 * time.Millisecond}, wantError: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			response, err := session.Request(tt.args.method, tt.args.url, tt.args.options...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Request() error = %v, wantErr %v", err, tt.wantErr)
+			client := NewClient(WithTimeout(tt.args.timeout))
+			_, err := client.Get(url)
+			if !reflect.DeepEqual(err != nil, tt.wantError) {
+				t.Errorf("WithTimeout() err = %v, wantError %v", err, tt.wantError)
 			}
-			got := map[string]interface{}{}
-			if err = response.Json(&got); (err != nil) != tt.wantErr {
-				t.Errorf("response.Json() error = %v, wantErr %v", err, tt.wantErr)
-			}
+		})
+	}
+}
+
+func TestHeaders(t *testing.T) {
+	url := testUrl + "/header"
+	type args struct {
+		headers []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string][]string
+	}{
+		{args: args{}, want: map[string][]string{"Accept-Encoding": {"gzip"}, "User-Agent": {userAgent}}},
+		{args: args{headers: []ReqOption{Header{"a": "1"}}}, want: map[string][]string{"Accept-Encoding": {"gzip"}, "User-Agent": {userAgent}, "A": {"1"}}},
+		{args: args{headers: []ReqOption{Header{"a": "1", "b": "2"}}}, want: map[string][]string{"Accept-Encoding": {"gzip"}, "User-Agent": {userAgent}, "A": {"1"}, "B": {"2"}}},
+		{args: args{headers: []ReqOption{Header{"a": "1"}, Header{"b": "2"}}}, want: map[string][]string{"Accept-Encoding": {"gzip"}, "User-Agent": {userAgent}, "A": {"1"}, "B": {"2"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, _ := Get(url, tt.args.headers...)
+			got := make(map[string][]string)
+			_ = resp.Json(&got)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
+				t.Errorf("Header() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParams(t *testing.T) {
+	url := testUrl + "/get"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		{args: args{}, want: map[string]string{}},
+		{args: args{opts: []ReqOption{Params{"a": "1"}}}, want: map[string]string{"a": "1"}},
+		{args: args{opts: []ReqOption{Params{"a": "1", "b": "2"}}}, want: map[string]string{"a": "1", "b": "2"}},
+		{args: args{opts: []ReqOption{Params{"a": "1"}, Params{"b": "2"}}}, want: map[string]string{"a": "1", "b": "2"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, _ := Get(url, tt.args.opts...)
+			got := make(map[string]string)
+			_ = resp.Json(&got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Params() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestJson(t *testing.T) {
+	url := testUrl + "/post"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]interface{}
+	}{
+		{args: args{}, want: map[string]interface{}{}},
+		{args: args{opts: []ReqOption{Json{"a": "1"}}}, want: map[string]interface{}{"a": "1"}},
+		{args: args{opts: []ReqOption{Json{"a": "1", "b": 2}}}, want: map[string]interface{}{"a": "1", "b": float64(2)}},
+		{args: args{opts: []ReqOption{Json{"a": "1"}, Json{"b": "2"}}}, want: map[string]interface{}{"a": "1", "b": "2"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, _ := Post(url, tt.args.opts...)
+			got := make(map[string]interface{})
+			_ = resp.Json(&got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Json() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestJsons(t *testing.T) {
+	url := testUrl + "/post"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want []map[string]interface{}
+	}{
+		{args: args{}, want: []map[string]interface{}{}},
+		{args: args{opts: []ReqOption{Jsons{{"a": "1"}}}}, want: []map[string]interface{}{{"a": "1"}}},
+		{args: args{opts: []ReqOption{Jsons{{"a": "1"}, {"b": 2}}}}, want: []map[string]interface{}{{"a": "1"}, {"b": float64(2)}}},
+		{args: args{opts: []ReqOption{Jsons{{"a": "1", "b": 2}}}}, want: []map[string]interface{}{{"a": "1", "b": float64(2)}}},
+		{args: args{opts: []ReqOption{Jsons{{"a": "1"}}, Jsons{{"b": "2"}}}}, want: []map[string]interface{}{{"a": "1"}, {"b": "2"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, _ := Post(url, tt.args.opts...)
+			got := make([]map[string]interface{}, 0)
+			_ = resp.Json(&got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Jsons() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestForm(t *testing.T) {
+	url := testUrl + "/post"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]interface{}
+	}{
+		{args: args{}, want: map[string]interface{}{}},
+		{args: args{opts: []ReqOption{Form{"a": "1"}}}, want: map[string]interface{}{"a": "1"}},
+		{args: args{opts: []ReqOption{Form{"a": "1", "b": "2"}}}, want: map[string]interface{}{"a": "1", "b": "2"}},
+		{args: args{opts: []ReqOption{Form{"a": "1"}, Form{"b": "2"}}}, want: map[string]interface{}{"a": "1", "b": "2"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, _ := Post(url, tt.args.opts...)
+			got := make(map[string]interface{})
+			_ = resp.Json(&got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Form() got = %v, want %v", got["b"], tt.want)
+			}
+		})
+	}
+}
+
+func TestFile(t *testing.T) {
+	url := testUrl + "/upload"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{args: args{opts: []ReqOption{FileWithContent("file", "hi.text", []byte("hi!"))}}, want: "hi!"},
+		{args: args{opts: []ReqOption{Form{"fileField": "fc"}, FileWithContent("fc", "hi.text", []byte("hi!"))}}, want: "hi!"},
+		{args: args{opts: []ReqOption{Form{"fileField": "image"}, FileWithPath("image", "./images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg")}},
+			want: func() string {
+				f, _ := os.Open("./images/TrakaiLithuania_ZH-CN0447602818_1920x1080.jpg")
+				bytes, _ := ioutil.ReadAll(f)
+				return string(bytes)
+			}()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := Post(url, tt.args.opts...)
+			if err != nil {
+				t.Errorf("file() err = %v", err)
+				return
+			}
+			got := resp.Text()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("file() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

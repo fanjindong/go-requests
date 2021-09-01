@@ -18,5 +18,7 @@ var (
 	ErrInvalidMethod = errors.New("go-requests: Method is invalid")
 
 	//ErrInvalidFile will be throw out when get file content data
-	ErrInvalidFile = errors.New("go-requests: Invalid File content")
+	ErrInvalidFile = errors.New("go-requests: Invalid file content")
+
+	ErrInvalidBodyType = errors.New("go-requests: Invalid Body Type")
 )
