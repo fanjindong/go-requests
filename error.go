@@ -21,4 +21,6 @@ var (
 	ErrInvalidFile = errors.New("go-requests: Invalid file content")
 
 	ErrInvalidBodyType = errors.New("go-requests: Invalid Body Type")
+
+	ErrTimeout = errors.New("go-requests: timeout")
 )
