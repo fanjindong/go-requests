@@ -34,6 +34,31 @@ func TestWithTimeout(t *testing.T) {
 	}
 }
 
+func TestTimeout(t *testing.T) {
+	url := testUrl + "/timeout"
+	type args struct {
+		timeout time.Duration
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantError bool
+	}{
+		{args: args{}},
+		{args: args{timeout: 2 * time.Second}},
+		{args: args{timeout: 1100 * time.Millisecond}},
+		{args: args{timeout: 1000 * time.Millisecond}, wantError: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Get(url, Timeout(tt.args.timeout))
+			if !reflect.DeepEqual(err != nil, tt.wantError) {
+				t.Errorf("WithTimeout() err = %v, wantError %v", err, tt.wantError)
+			}
+		})
+	}
+}
+
 func TestHeaders(t *testing.T) {
 	url := testUrl + "/header"
 	type args struct {
