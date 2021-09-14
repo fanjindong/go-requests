@@ -2,6 +2,7 @@ package requests
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
@@ -141,5 +142,25 @@ func (f file) Do(req *Request) error {
 		f.content = fc
 	}
 	req.files = append(req.files, &f)
+	return nil
+}
+
+type Ctx struct {
+	context.Context
+}
+
+func (c Ctx) Do(req *Request) error {
+	req.Request = req.WithContext(c)
+	return nil
+}
+
+type Timeout time.Duration
+
+func (t Timeout) Do(req *Request) error {
+	if time.Duration(t) == 0 {
+		return nil
+	}
+	ctx, _ := context.WithTimeout(req.Context(), time.Duration(t))
+	req.Request = req.WithContext(ctx)
 	return nil
 }

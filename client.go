@@ -52,12 +52,13 @@ func Head(url string, opts ...ReqOption) (*Response, error) {
 
 type Client struct {
 	*http.Client
+	hooks []Hook
 }
 
-var DefaultClient = &Client{http.DefaultClient}
+var DefaultClient = &Client{Client: http.DefaultClient}
 
 func NewClient(opts ...ClientOption) *Client {
-	c := &Client{&http.Client{}}
+	c := &Client{Client: &http.Client{}}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -87,12 +88,33 @@ func (s *Client) Request(method, url string, opts ...ReqOption) (*Response, erro
 		return nil, err
 	}
 
-	resp, err := s.Do(req.Request)
-	if err != nil {
-		return nil, err
+	for _, h := range s.hooks {
+		h.BeforeProcess(req)
 	}
-
-	return NewResponse(resp)
+	var result *http.Response
+	var resp *Response
+	success := make(chan struct{})
+	done := req.Context().Done()
+	if done != nil {
+		go func() {
+			result, err = s.Do(req.Request)
+			close(success)
+		}()
+		select {
+		case <-done:
+			err = ErrTimeout
+		case <-success:
+		}
+	} else {
+		result, err = s.Do(req.Request)
+	}
+	if err == nil {
+		resp, err = NewResponse(result)
+	}
+	for _, h := range s.hooks {
+		h.AfterProcess(req, resp, err)
+	}
+	return resp, err
 }
 
 func (s *Client) Get(url string, opts ...ReqOption) (*Response, error) {
@@ -121,6 +143,10 @@ func (s *Client) Patch(url string, opts ...ReqOption) (*Response, error) {
 
 func (s *Client) Head(url string, opts ...ReqOption) (*Response, error) {
 	return s.Request(HEAD, url, opts...)
+}
+
+func (s *Client) AddHook(h Hook) {
+	s.hooks = append(s.hooks, h)
 }
 
 var unmarshal = json.Unmarshal
