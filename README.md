@@ -73,13 +73,13 @@ fmt.Println(resp.Text)
 There’s also a builtin JSON decoder, in case you’re dealing with JSON data:
 
 ```go
-var rStruct struct{
-Code int `json:"code"`
-Message string `json:"message"`
+var response struct{
+    Code    int    `json:"code"`
+    Message string `json:"message"`
 }
 
-err := resp.Json(&rStruct)
-fmt.Printf("resp.Json to struct: %+v \n", rStruct)
+resp.Json(&response)
+fmt.Printf("resp.Json to struct: %+v \n", response)
 // resp.Json to struct: {Code:0, Message:"success"} 
 ```
 
@@ -90,7 +90,7 @@ If you’d like to add HTTP headers to a request, simply pass in a `requests.Hea
 For example, we did not specify our user-agent in the previous example:
 
 ```go
-r, err := requests.Get("https://api.github.com/some/endpoint", requests.Headers{"user-agent": "my-app/0.0.1"})
+resp, _ := requests.Get("https://api.github.com/some/endpoint", requests.Headers{"user-agent": "my-app/0.0.1"})
 ```
 
 ### More complicated POST requests
@@ -99,7 +99,7 @@ Typically, you want to send some form-encoded data — much like an HTML form. T
 to the data argument. Your data will automatically be form-encoded when the request is made:
 
 ```go
-r, err := requests.Post("https://httpbin.org/post", requests.Form{"key1": "value1", "key2": "value2"})
+resp, _ := requests.Post("https://httpbin.org/post", requests.Form{"key1": "value1", "key2": "value2"})
 fmt.Println(r.Text())
 //{"code":0,"message":"pong"}
 ```
@@ -108,7 +108,7 @@ For example, the GitHub API v3 accepts JSON-Encoded POST/PATCH data, you can als
 parameter and it will be encoded automatically:
 
 ```go
-r, err := requests.Post("https://api.github.com/some/endpoint", requests.Json{"key1": "value1", "key2": "value2"})
+resp, _ := requests.Post("https://api.github.com/some/endpoint", requests.Json{"key1": "value1", "key2": "value2"})
 ```
 
 Using the `requests.Json` in the request will change the Content-Type in the header to application/json.
@@ -118,8 +118,8 @@ Using the `requests.Json` in the request will change the Content-Type in the hea
 We can check the response status code:
 
 ```go
-r, err := requests.Get("https://httpbin.org/get")
-fmt.Println(r.StatusCode)
+resp, _ := requests.Get("https://httpbin.org/get")
+fmt.Println(resp.StatusCode)
 // 200
 ```
 
@@ -128,7 +128,7 @@ fmt.Println(r.StatusCode)
 We can view the server’s response header:
 
 ```go
-fmt.Println(r.Header)
+fmt.Println(resp.Header)
 //map[Cache-Control:[private] Content-Type:[application/json] Set-Cookie:[QINGCLOUDELB=d9a2454c187d2875afb6701eb80e9c8761ebcf3b54797eae61b25b90f71273ea; path=/; HttpOnly]]
 
 ```
@@ -136,6 +136,6 @@ fmt.Println(r.Header)
 We can access the headers using Get method:
 
 ```go
-r.Headers.Get("Content-Type")
+resp.Headers.Get("Content-Type")
 //"application/json"
 ```
