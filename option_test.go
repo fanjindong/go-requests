@@ -228,3 +228,35 @@ func TestFile(t *testing.T) {
 		})
 	}
 }
+
+func TestGzip(t *testing.T) {
+	url := testUrl + "/post"
+	type args struct {
+		opts []ReqOption
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{args: args{[]ReqOption{Gzip{}}}, want: ""},
+		{args: args{opts: []ReqOption{Gzip{}, Json{"a": "1"}}}, want: `{"a":"1"}`},
+		{args: args{opts: []ReqOption{Json{"a": "1", "b": 2}, Gzip{}}}, want: `{"a":"1","b":2}`},
+		{args: args{opts: []ReqOption{Json{"a": "1"}, Json{"b": "2"}, Gzip{}}}, want: `{"a":"1","b":"2"}`},
+		{args: args{opts: []ReqOption{Gzip{}, Form{"a": "1"}}}, want: `{"a":"1"}`},
+		{args: args{opts: []ReqOption{Gzip{}, Jsons{{"a": "1", "b": 2}}}}, want: `[{"a":"1","b":2}]`},
+		{args: args{opts: []ReqOption{Gzip{}, Jsons{{"a": "1", "b": 2}, {"c": 0}}}}, want: `[{"a":"1","b":2},{"c":0}]`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := Post(url, tt.args.opts...)
+			if err != nil {
+				t.Errorf("Json() got err = %v", err)
+			}
+			got := resp.Text()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Json() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
