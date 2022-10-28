@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -27,6 +28,14 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 
 func postHandler(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get("content-Type")
+	if r.Header.Get("Content-Encoding") == "gzip" {
+		var err error
+		if r.Body, err = gzip.NewReader(r.Body); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("gzip body: " + err.Error()))
+			return
+		}
+	}
 	switch contentType {
 	case "application/x-www-form-urlencoded":
 		if err := r.ParseForm(); err != nil {

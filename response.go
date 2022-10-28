@@ -1,6 +1,8 @@
 package requests
 
 import (
+	"compress/gzip"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -25,6 +27,12 @@ func (r *Response) Text() string {
 
 func (r *Response) Bytes() ([]byte, error) {
 	if r.bytes == nil {
+		var err error
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			if r.Body, err = r.decompressed(r.Body); err != nil {
+				return nil, err
+			}
+		}
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return nil, err
@@ -55,4 +63,8 @@ func (r Response) SaveFile(filename string) error {
 		_, err = dst.Write(bt)
 		return err
 	}
+}
+
+func (r *Response) decompressed(reader io.Reader) (io.ReadCloser, error) {
+	return gzip.NewReader(reader)
 }

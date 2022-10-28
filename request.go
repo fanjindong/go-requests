@@ -2,6 +2,7 @@ package requests
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"github.com/ajg/form"
@@ -19,6 +20,7 @@ type Request struct {
 	form  Form
 	json  Json
 	jsons Jsons
+	gzip  bool
 }
 
 // NewRequest wraps NewRequestWithContext using the background context.
@@ -48,8 +50,13 @@ func (req *Request) loadBody() error {
 		if err != nil {
 			return errors.Wrap(ErrInvalidJson, err.Error())
 		}
-		jsonBuffer := bytes.NewBuffer(jsonBytes)
-		req.Body = ioutil.NopCloser(jsonBuffer)
+		if req.gzip {
+			if jsonBytes, err = req.compressed(jsonBytes); err != nil {
+				return err
+			}
+		}
+		buf := bytes.NewBuffer(jsonBytes)
+		req.Body = ioutil.NopCloser(buf)
 		return nil
 	}
 	// application/x-www-form-urlencoded
@@ -58,6 +65,13 @@ func (req *Request) loadBody() error {
 		data, err := form.EncodeToString(req.form)
 		if err != nil {
 			return errors.Wrap(ErrInvalidForm, err.Error())
+		}
+		if req.gzip {
+			if compressedData, err := req.compressed([]byte(data)); err != nil {
+				return err
+			} else {
+				data = string(compressedData)
+			}
 		}
 		dataReader := strings.NewReader(data)
 		req.Body = ioutil.NopCloser(dataReader)
@@ -86,7 +100,29 @@ func (req *Request) loadBody() error {
 	if err := multipartWriter.Close(); err != nil {
 		return err
 	}
+	if req.gzip {
+		if compressedData, err := req.compressed(buffer.Bytes()); err != nil {
+			return err
+		} else {
+			buffer = bytes.NewBuffer(compressedData)
+		}
+	}
 	req.Body = ioutil.NopCloser(buffer)
 	req.Header.Add("content-Type", multipartWriter.FormDataContentType())
 	return nil
+}
+
+func (req *Request) compressed(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	if _, err := gw.Write(data); err != nil {
+		return nil, err
+	}
+	if err := gw.Close(); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Set("Accept-Encoding", "gzip")
+	return buf.Bytes(), nil
 }
