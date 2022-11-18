@@ -161,6 +161,14 @@ func (t Timeout) Do(req *Request) error {
 		return nil
 	}
 	ctx, _ := context.WithTimeout(req.Context(), time.Duration(t))
+	// todo call cancel
 	req.Request = req.WithContext(ctx)
+	return nil
+}
+
+type Gzip struct{}
+
+func (Gzip) Do(req *Request) error {
+	req.gzip = true
 	return nil
 }
