@@ -85,7 +85,6 @@ func TestPost(t *testing.T) {
 func TestReuseConnection(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		resp, err := Get(testUrl)
-		//resp, err := http.Get(testUrl)
 		if err != nil {
 			t.Log(err)
 			return
