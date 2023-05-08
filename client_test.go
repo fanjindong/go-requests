@@ -84,8 +84,7 @@ func TestPost(t *testing.T) {
 
 func TestReuseConnection(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		resp, err := Get("http://ml1pub.tsht3.mc.ops/")
-		//resp, err := http.Get("http://ml1pub.tsht3.mc.ops/")
+		resp, err := Get(testUrl)
 		if err != nil {
 			t.Log(err)
 			return
