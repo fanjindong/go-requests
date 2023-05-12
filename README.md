@@ -129,6 +129,7 @@ We can view the server’s response header:
 
 ```go
 fmt.Println(resp.Header)
+
 //map[Cache-Control:[private] Content-Type:[application/json] Set-Cookie:[QINGCLOUDELB=d9a2454c187d2875afb6701eb80e9c8761ebcf3b54797eae61b25b90f71273ea; path=/; HttpOnly]]
 
 ```
